@@ -69,12 +69,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// --- авто удаление через 5 минут ---
-	go func(id string) {
-		time.Sleep(1 * time.Minute)
-		_ = deleteFromUploadcare(id, secretKey)
-	}(fileID)
-
 	response := ServerResponse{
 		Success: true,
 		ID:      fileID,
@@ -100,7 +94,8 @@ func uploadToUploadcare(imageBytes []byte, publicKey string) (string, string, er
 	}
 
 	writer.WriteField("UPLOADCARE_PUB_KEY", publicKey)
-	writer.WriteField("UPLOADCARE_STORE", "1")
+	writer.WriteField("UPLOADCARE_STORE", "1")    // сохраняем файл
+	writer.WriteField("UPLOADCARE_EXPIRE", "300") // удаление через 300 секунд = 5 минут
 
 	writer.Close()
 
@@ -130,40 +125,9 @@ func uploadToUploadcare(imageBytes []byte, publicKey string) (string, string, er
 	}
 
 	fileID := uploadResp.File
-
-	// прямой URL через твой поддомен
 	fileURL := fmt.Sprintf("https://1kqur3jhqh.ucarecd.net/%s/valentine.png", fileID)
 
 	return fileURL, fileID, nil
-}
-
-func deleteFromUploadcare(fileID, secretKey string) error {
-	req, err := http.NewRequest(
-		"DELETE",
-		"https://api.uploadcare.com/files/"+fileID+"/",
-		nil,
-	)
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Authorization", "Uploadcare.Simple "+secretKey+":")
-	req.Header.Set("Accept", "application/vnd.uploadcare-v0.7+json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == 200 || resp.StatusCode == 204 {
-		fmt.Println("✅ Файл удален:", fileID)
-	} else {
-		fmt.Println("⚠️ Не удалось удалить файл:", fileID, "Status:", resp.Status)
-	}
-
-	return nil
 }
 
 func sendJSONError(w http.ResponseWriter, message string, status int) {
