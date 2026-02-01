@@ -19,8 +19,5 @@
       "src": "/(.*)",
       "dest": "/public/$1"
     }
-  ],
-  "env": {
-    "UPLOADCARE_PUBLIC_KEY": "@uploadcare_public_key"
-  }
+  ]
 }
