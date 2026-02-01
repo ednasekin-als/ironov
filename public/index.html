@@ -5,12 +5,22 @@
     <meta charset="UTF-8">
     <title>Создать Валентинку</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        @font-face {
+            font-family: "ALS Hauss Medium";
+            src: url("https://db.onlinewebfonts.com/t/af2bba52a607a39b7b92a72428ff47ca.eot");
+            src: url("https://db.onlinewebfonts.com/t/af2bba52a607a39b7b92a72428ff47ca.eot?#iefix")format("embedded-opentype"),
+                url("https://db.onlinewebfonts.com/t/af2bba52a607a39b7b92a72428ff47ca.woff2")format("woff2"),
+                url("https://db.onlinewebfonts.com/t/af2bba52a607a39b7b92a72428ff47ca.woff")format("woff"),
+                url("https://db.onlinewebfonts.com/t/af2bba52a607a39b7b92a72428ff47ca.ttf")format("truetype"),
+                url("https://db.onlinewebfonts.com/t/af2bba52a607a39b7b92a72428ff47ca.svg#ALS Hauss Medium")format("svg");
+        }
+
+
         body {
             margin: 0;
             padding: 20px;
-            font-family: 'Roboto', sans-serif;
+            font-family: "ALS Hauss Medium";
             background: #000;
             color: #ff7a00;
             display: flex;
@@ -20,7 +30,7 @@
         }
 
         .container {
-            max-width: 500px;
+            max-width: 600px;
             width: 100%;
             background: #000000;
             padding: 20px;
@@ -37,9 +47,9 @@
             width: 100%;
             height: 100px;
             padding: 10px;
+            font-size: 18px;
             margin: 10px 0;
-            border: 1px solid #fff;
-            border-radius: 5px;
+            border-radius: 10px;
             background: #222;
             color: #fff;
             resize: none;
@@ -47,22 +57,27 @@
 
         canvas {
             max-width: 100%;
-            border: 1px solid #fd5300;
             margin: 10px 0;
-            border-radius: 5px;
+            border-radius: 10px;
         }
 
         button {
             width: 100%;
-            padding: 10px 20px;
+            padding: 20px;
+            font-size: 20px;
             margin: 5px;
             background: #fd5300;
             color: #fff;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 16px;
             transition: background 0.2s;
+        }
+
+        .telegram {
+            background-color: #0088cc;
+            color: #fff;
         }
 
         button:hover {
@@ -86,20 +101,20 @@
 
 <body>
     <div class="container">
-        <h1>Создать Валентинку</h1>
+        <h1>Николай Иронов создаст валентинку с пожеланиями</h1>
 
         <textarea id="message" placeholder="Введите пожелание...">С Днём Святого Валентина!
 Любви и счастья!</textarea>
 
         <button onclick="generateValentine()">Сгенерировать</button>
 
-        <canvas id="valentineCanvas" width="500" height="500"></canvas>
+        <canvas id="valentineCanvas" width="300" height="300"></canvas>
 
         <div class="loading" id="loading">Загружаем на сервер...</div>
 
         <div id="buttons">
             <button onclick="downloadValentine()">Скачать</button>
-            <button onclick="shareToTelegram()">Telegram</button>
+            <button class="telegram" onclick="shareToTelegram()">Поделиться через Telegram</button>
         </div>
     </div>
 
@@ -186,7 +201,7 @@
                         currentImageUrl = data.url;
                         currentImageId = data.id;
                         loading.style.display = 'none';
-                        buttons.style.display = 'block';
+                        buttons.style.display = 'flex';
                         console.log('Картинка загружена:', data.url);
                     } else {
                         loading.style.display = 'none';
