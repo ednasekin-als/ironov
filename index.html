@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Создать Валентинку</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial;
+            background: #ffe6e6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #ff4d4d;
+            text-align: center;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ffcccc;
+            border-radius: 5px;
+        }
+
+        canvas {
+            max-width: 100%;
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+
+        button {
+            padding: 10px;
+            margin: 5px;
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #ff3333;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>💌 Создать Валентинку</h1>
+
+        <textarea id="message" placeholder="Введите пожелание...">
+С Днём Святого Валентина! ❤️
+Любви и счастья!
+        </textarea>
+
+        <button onclick="generateValentine()">✨ Сгенерировать</button>
+
+        <canvas id="valentineCanvas" width="500" height="500"></canvas>
+
+        <div style="display: none;" id="buttons">
+            <button onclick="downloadValentine()">💾 Скачать</button>
+            <button onclick="shareToTelegram()">📤 Telegram</button>
+        </div>
+    </div>
+
+    <script>
+        let currentImageId = null;
+
+        function generateValentine() {
+            const canvas = document.getElementById('valentineCanvas');
+            const ctx = canvas.getContext('2d');
+            const text = document.getElementById('message').value;
+
+            // Очищаем
+            ctx.clearRect(0, 0, 500, 500);
+
+            // Фон
+            const gradient = ctx.createLinearGradient(0, 0, 500, 500);
+            gradient.addColorStop(0, '#ffcccc');
+            gradient.addColorStop(1, '#ff9999');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 500, 500);
+
+            // Сердечки
+            ctx.fillStyle = '#ffffff';
+            ctx.globalAlpha = 0.3;
+            drawHeart(ctx, 250, 200, 50);
+
+            ctx.fillStyle = '#ff4d4d';
+            ctx.globalAlpha = 0.7;
+            drawHeart(ctx, 100, 100, 20);
+            drawHeart(ctx, 400, 100, 20);
+            drawHeart(ctx, 100, 400, 20);
+            drawHeart(ctx, 400, 400, 20);
+
+            // Текст
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.globalAlpha = 1;
+
+            const lines = text.split('\n');
+            lines.forEach((line, i) => {
+                ctx.fillText(line, 250, 300 + i * 30);
+            });
+
+            // Подпись
+            ctx.font = 'italic 16px Arial';
+            ctx.fillText('С любовью 💖', 250, 470);
+
+            // Сохраняем на сервер и получаем ID
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append('image', blob, 'valentine.png');
+
+                try {
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        currentImageId = data.id;
+                        document.getElementById('buttons').style.display = 'block';
+                        console.log('Картинка сохранена. ID:', currentImageId);
+                        console.log('URL картинки:', data.url);
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки:', error);
+                    alert('Ошибка сохранения картинки');
+                }
+            }, 'image/png');
+        }
+
+        function drawHeart(ctx, x, y, size) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.bezierCurveTo(x - size / 2, y - size, x - size, y - size / 3, x, y + size / 2);
+            ctx.bezierCurveTo(x + size, y - size / 3, x + size / 2, y - size, x, y);
+            ctx.fill();
+        }
+
+        function downloadValentine() {
+            const canvas = document.getElementById('valentineCanvas');
+            const link = document.createElement('a');
+            link.download = 'валентинка.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function shareToTelegram() {
+            if (!currentImageId) {
+                alert('Сначала сгенерируйте валентинку');
+                return;
+            }
+
+            const viewUrl = window.location.origin + '/view/' + currentImageId;
+            const messageText = "Вам отправили валентинку! 💌";
+
+            const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(viewUrl)}&text=${encodeURIComponent(messageText)}`;
+            window.open(telegramUrl, '_blank');
+        }
+
+
+
+        // Генерируем при загрузке
+        window.onload = generateValentine;
+    </script>
+</body>
+
+</html>
