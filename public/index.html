@@ -262,7 +262,7 @@
 
         function shareToTelegram() {
             if (!currentImageUrl) return;
-            const messageText = "Вам отправили валентинку!\nНажмите на ссылку, чтобы увидеть.";
+            const messageText = "Николай Иронов поздравляет с Днем Валентина 💘";
             const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(currentImageUrl)}&text=${encodeURIComponent(messageText)}`;
             window.open(telegramUrl, '_blank');
         }
