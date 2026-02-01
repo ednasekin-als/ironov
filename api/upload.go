@@ -8,9 +8,15 @@ import (
     "mime/multipart"
     "net/http"
     "os"
+    "time"
 )
 
-const uploadcareAPI = "https://upload.uploadcare.com/base/"
+const (
+    uploadcareAPI    = "https://upload.uploadcare.com/base/"
+    deleteAPI        = "https://api.uploadcare.com/files/%s/storage/"
+    publicKey        = "YOUR_PUBLIC_KEY" // Замени на свой
+    secretKey        = "YOUR_SECRET_KEY" // Замени на свой
+)
 
 type UploadcareResponse struct {
     File string `json:"file"`
@@ -22,6 +28,13 @@ type ServerResponse struct {
     URL     string `json:"url"`
 }
 
+type DeleteScheduler struct {
+    fileID string
+    timer  *time.Timer
+}
+
+var deleteQueue = make(map[string]*DeleteScheduler)
+
 func Handler(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Access-Control-Allow-Origin", "*")
     
@@ -32,12 +45,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     
     if r.Method != "POST" {
         http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-        return
-    }
-    
-    publicKey := os.Getenv("UPLOADCARE_PUBLIC_KEY")
-    if publicKey == "" {
-        sendJSONError(w, "Uploadcare configuration error", http.StatusInternalServerError)
         return
     }
     
@@ -60,11 +67,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         return
     }
     
-    fileURL, fileID, err := uploadToUploadcare(imageData, publicKey)
+    fileURL, fileID, err := uploadToUploadcare(imageData)
     if err != nil {
         sendJSONError(w, "Failed to upload to storage: "+err.Error(), http.StatusInternalServerError)
         return
     }
+    
+    // Планируем удаление через 1 час
+    scheduleFileDeletion(fileID)
     
     response := ServerResponse{
         Success: true,
@@ -76,7 +86,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(response)
 }
 
-func uploadToUploadcare(imageBytes []byte, publicKey string) (string, string, error) {
+func uploadToUploadcare(imageBytes []byte) (string, string, error) {
     body := &bytes.Buffer{}
     writer := multipart.NewWriter(body)
     
@@ -122,11 +132,58 @@ func uploadToUploadcare(imageBytes []byte, publicKey string) (string, string, er
     
     fileID := uploadResp.File
     
-    // ВАЖНО: Используем ТВОЙ фиксированный поддомен!
-    // Замени 1kqur3jhqh на свой поддомен из панели Uploadcare
-    fileURL := fmt.Sprintf("https://1kqur3jhqh.ucarecd.net/%s/valentine.png", fileID)
+    // Используем фиксированный поддомен
+    fileURL := fmt.Sprintf("https://ucarecdn.com/%s/valentine.png", fileID)
     
     return fileURL, fileID, nil
+}
+
+func scheduleFileDeletion(fileID string) {
+    // Отменяем предыдущий таймер, если он существует
+    if scheduler, exists := deleteQueue[fileID]; exists {
+        scheduler.timer.Stop()
+        delete(deleteQueue, fileID)
+    }
+    
+    // Создаем новый таймер на 1 час
+    timer := time.AfterFunc(1*time.Hour, func() {
+        deleteFileFromUploadcare(fileID)
+        delete(deleteQueue, fileID)
+    })
+    
+    deleteQueue[fileID] = &DeleteScheduler{
+        fileID: fileID,
+        timer:  timer,
+    }
+    
+    fmt.Printf("🗑️ Запланировано удаление файла %s через 1 час\n", fileID)
+}
+
+func deleteFileFromUploadcare(fileID string) error {
+    client := &http.Client{}
+    
+    url := fmt.Sprintf(deleteAPI, fileID)
+    req, err := http.NewRequest("DELETE", url, nil)
+    if err != nil {
+        return err
+    }
+    
+    // Аутентификация для Uploadcare API
+    req.SetBasicAuth(publicKey, secretKey)
+    
+    resp, err := client.Do(req)
+    if err != nil {
+        return err
+    }
+    defer resp.Body.Close()
+    
+    if resp.StatusCode == 200 || resp.StatusCode == 204 {
+        fmt.Printf("✅ Файл %s успешно удален\n", fileID)
+        return nil
+    }
+    
+    body, _ := io.ReadAll(resp.Body)
+    return fmt.Errorf("failed to delete file: %s", string(body))
 }
 
 func sendJSONError(w http.ResponseWriter, message string, status int) {
