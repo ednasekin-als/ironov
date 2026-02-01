@@ -6,13 +6,9 @@ import (
     "fmt"
     "io"
     "net/http"
+    "os"
+    "path/filepath"
     "strings"
-    "sync"
-)
-
-var (
-    images = make(map[string][]byte)
-    mu     sync.RWMutex
 )
 
 // Ответ для фронтенда
@@ -29,10 +25,7 @@ func generateToken() string {
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
-    // Устанавливаем CORS заголовки
     w.Header().Set("Access-Control-Allow-Origin", "*")
-    w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-    w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
     
     if r.Method == "OPTIONS" {
         w.WriteHeader(http.StatusOK)
@@ -41,22 +34,22 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     
     // Обработка статических картинок
     if strings.HasPrefix(r.URL.Path, "/api/images/") && strings.HasSuffix(r.URL.Path, ".png") {
-        // Извлекаем token из URL: /api/images/{token}.png
+        // Извлекаем token из URL
         token := r.URL.Path[len("/api/images/"):]
-        token = token[:len(token)-4] // убираем .png
+        token = token[:len(token)-4]
         
-        mu.RLock()
-        data, exists := images[token]
-        mu.RUnlock()
+        // Читаем файл из /tmp (единственное место на Vercel с write access)
+        filePath := filepath.Join("/tmp", token+".png")
         
-        if exists {
-            w.Header().Set("Content-Type", "image/png")
-            w.Header().Set("Cache-Control", "public, max-age=31536000")
-            w.Write(data)
+        data, err := os.ReadFile(filePath)
+        if err != nil {
+            http.NotFound(w, r)
             return
         }
         
-        http.NotFound(w, r)
+        w.Header().Set("Content-Type", "image/png")
+        w.Header().Set("Cache-Control", "public, max-age=31536000")
+        w.Write(data)
         return
     }
     
@@ -68,16 +61,16 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         }
         
         // Парсим multipart форму
-        err := r.ParseMultipartForm(10 << 20) // 10MB
+        err := r.ParseMultipartForm(10 << 20)
         if err != nil {
-            http.Error(w, "Failed to parse form: "+err.Error(), http.StatusBadRequest)
+            http.Error(w, "Failed to parse form", http.StatusBadRequest)
             return
         }
         
         // Получаем файл
         file, _, err := r.FormFile("image")
         if err != nil {
-            http.Error(w, "No image file: "+err.Error(), http.StatusBadRequest)
+            http.Error(w, "No image file", http.StatusBadRequest)
             return
         }
         defer file.Close()
@@ -85,17 +78,20 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         // Читаем файл
         imageData, err := io.ReadAll(file)
         if err != nil {
-            http.Error(w, "Failed to read image: "+err.Error(), http.StatusInternalServerError)
+            http.Error(w, "Failed to read image", http.StatusInternalServerError)
             return
         }
         
         // Генерируем ID
         token := generateToken()
         
-        // Сохраняем в память
-        mu.Lock()
-        images[token] = imageData
-        mu.Unlock()
+        // Сохраняем в файл в /tmp
+        filePath := filepath.Join("/tmp", token+".png")
+        err = os.WriteFile(filePath, imageData, 0644)
+        if err != nil {
+            http.Error(w, "Failed to save image", http.StatusInternalServerError)
+            return
+        }
         
         // Отправляем JSON ответ
         response := UploadResponse{
@@ -109,6 +105,5 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         return
     }
     
-    // Для всех остальных маршрутов - 404
     http.NotFound(w, r)
 }
