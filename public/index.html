@@ -53,10 +53,24 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            font-size: 16px;
         }
 
         button:hover {
             background: #ff3333;
+        }
+
+        #buttons {
+            display: none;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .loading {
+            display: none;
+            color: #ff4d4d;
+            font-style: italic;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -74,6 +88,8 @@
 
         <canvas id="valentineCanvas" width="500" height="500"></canvas>
 
+        <div class="loading" id="loading">Загружаем на сервер...</div>
+
         <div id="buttons">
             <button onclick="downloadValentine()">💾 Скачать</button>
             <button onclick="shareToTelegram()">📤 Telegram</button>
@@ -81,6 +97,9 @@
     </div>
 
     <script>
+        let currentImageUrl = null;
+        let currentImageId = null;
+
         function generateValentine() {
             const canvas = document.getElementById('valentineCanvas');
             const ctx = canvas.getContext('2d');
@@ -123,11 +142,8 @@
             ctx.font = 'italic 16px Arial';
             ctx.fillText('С любовью 💖', 250, 470);
 
-            // Показываем кнопки сразу
-            document.getElementById('buttons').style.display = 'block';
-
-            // Убираем серверную логику - больше не отправляем на сервер
-            console.log('Валентинка сгенерирована!');
+            // Загружаем на сервер
+            uploadToServer();
         }
 
         function drawHeart(ctx, x, y, size) {
@@ -136,6 +152,52 @@
             ctx.bezierCurveTo(x - size / 2, y - size, x - size, y - size / 3, x, y + size / 2);
             ctx.bezierCurveTo(x + size, y - size / 3, x + size / 2, y - size, x, y);
             ctx.fill();
+        }
+
+        async function uploadToServer() {
+            const canvas = document.getElementById('valentineCanvas');
+            const loading = document.getElementById('loading');
+            const buttons = document.getElementById('buttons');
+
+            // Показываем индикатор загрузки
+            loading.style.display = 'block';
+            buttons.style.display = 'none';
+
+            try {
+                canvas.toBlob(async (blob) => {
+                    const formData = new FormData();
+                    formData.append('image', blob, 'valentine.png');
+
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        currentImageUrl = data.url;
+                        currentImageId = data.id;
+
+                        console.log('✅ Картинка загружена!');
+                        console.log('📁 ID:', currentImageId);
+                        console.log('🔗 URL:', currentImageUrl);
+
+                        // Показываем кнопки
+                        loading.style.display = 'none';
+                        buttons.style.display = 'block';
+
+                        alert('✅ Валентинка успешно сохранена в облаке!');
+                    } else {
+                        loading.style.display = 'none';
+                        alert('❌ Ошибка: ' + (data.error || 'Не удалось сохранить'));
+                    }
+                }, 'image/png');
+            } catch (error) {
+                loading.style.display = 'none';
+                console.error('Ошибка загрузки:', error);
+                alert('❌ Ошибка сети: ' + error.message);
+            }
         }
 
         function downloadValentine() {
@@ -147,15 +209,13 @@
         }
 
         function shareToTelegram() {
-            const canvas = document.getElementById('valentineCanvas');
+            if (!currentImageUrl) {
+                alert('Сначала сгенерируйте валентинку');
+                return;
+            }
 
-            // Создаем Data URL картинки
-            const imageData = canvas.toDataURL('image/png');
-
-            // Telegram не поддерживает прямые Data URLs в ссылках
-            // Поэтому отправляем ссылку на генератор + инструкцию
-            const message = "Я создал(а) валентинку! 💌\nСоздай свою тут: " + window.location.href;
-            const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(message)}`;
+            const messageText = "Вам отправили валентинку! 💌\nНажмите на ссылку, чтобы увидеть ❤️\n" + currentImageUrl;
+            const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(currentImageUrl)}&text=${encodeURIComponent(messageText)}`;
             window.open(telegramUrl, '_blank');
         }
 
