@@ -5,13 +5,13 @@
     <meta charset="UTF-8">
     <title>Создать Валентинку</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-
     <style>
         body {
             margin: 0;
             padding: 20px;
-            font-family: Arial;
-            background: #ffe6e6;
+            font-family: 'Roboto', sans-serif;
+            background: #000;
+            color: #ff7a00;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -21,15 +21,15 @@
         .container {
             max-width: 500px;
             width: 100%;
-            background: white;
+            background: #111;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
         }
 
         h1 {
-            color: #ff4d4d;
-            text-align: center;
+            color: #ff7a00;
+            margin-bottom: 20px;
         }
 
         textarea {
@@ -37,40 +37,44 @@
             height: 100px;
             padding: 10px;
             margin: 10px 0;
-            border: 1px solid #ffcccc;
+            border: 1px solid #ff7a00;
             border-radius: 5px;
+            background: #222;
+            color: #fff;
+            resize: none;
         }
 
         canvas {
             max-width: 100%;
-            border: 1px solid #ccc;
+            border: 1px solid #ff7a00;
             margin: 10px 0;
+            border-radius: 5px;
         }
 
         button {
-            padding: 10px;
+            padding: 10px 20px;
             margin: 5px;
-            background: #ff4d4d;
-            color: white;
+            background: #ff7a00;
+            color: #000;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
+            transition: background 0.2s;
         }
 
         button:hover {
-            background: #ff3333;
+            background: #ffa233;
         }
 
         #buttons {
             display: none;
             margin-top: 15px;
-            text-align: center;
         }
 
         .loading {
             display: none;
-            color: #ff4d4d;
+            color: #ff7a00;
             font-style: italic;
             margin-top: 10px;
         }
@@ -79,22 +83,20 @@
 
 <body>
     <div class="container">
-        <h1>💌 Создать Валентинку</h1>
+        <h1>Создать Валентинку</h1>
 
-        <textarea id="message" placeholder="Введите пожелание...">
-С Днём Святого Валентина! ❤️
-Любви и счастья!
-        </textarea>
+        <textarea id="message" placeholder="Введите пожелание...">С Днём Святого Валентина!
+Любви и счастья!</textarea>
 
-        <button onclick="generateValentine()">✨ Сгенерировать</button>
+        <button onclick="generateValentine()">Сгенерировать</button>
 
         <canvas id="valentineCanvas" width="500" height="500"></canvas>
 
         <div class="loading" id="loading">Загружаем на сервер...</div>
 
         <div id="buttons">
-            <button onclick="downloadValentine()">💾 Скачать</button>
-            <button onclick="shareToTelegram()">📤 Telegram</button>
+            <button onclick="downloadValentine()">Скачать</button>
+            <button onclick="shareToTelegram()">Telegram</button>
         </div>
     </div>
 
@@ -107,31 +109,28 @@
             const ctx = canvas.getContext('2d');
             const text = document.getElementById('message').value;
 
-            // Очищаем
             ctx.clearRect(0, 0, 500, 500);
 
             // Фон
             const gradient = ctx.createLinearGradient(0, 0, 500, 500);
-            gradient.addColorStop(0, '#ffcccc');
-            gradient.addColorStop(1, '#ff9999');
+            gradient.addColorStop(0, '#111');
+            gradient.addColorStop(1, '#222');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, 500, 500);
 
-            // Сердечки
-            ctx.fillStyle = '#ffffff';
-            ctx.globalAlpha = 0.3;
+            // Сердечки (белые и оранжевые)
+            ctx.fillStyle = '#ff7a00';
             drawHeart(ctx, 250, 200, 50);
 
-            ctx.fillStyle = '#ff4d4d';
-            ctx.globalAlpha = 0.7;
+            ctx.fillStyle = '#ff7a00';
             drawHeart(ctx, 100, 100, 20);
             drawHeart(ctx, 400, 100, 20);
             drawHeart(ctx, 100, 400, 20);
             drawHeart(ctx, 400, 400, 20);
 
             // Текст
-            ctx.fillStyle = '#333';
-            ctx.font = 'bold 20px Arial';
+            ctx.fillStyle = '#ff7a00';
+            ctx.font = 'bold 20px Roboto';
             ctx.textAlign = 'center';
             ctx.globalAlpha = 1;
 
@@ -140,11 +139,9 @@
                 ctx.fillText(line, 250, 300 + i * 30);
             });
 
-            // Подпись
-            ctx.font = 'italic 16px Arial';
-            ctx.fillText('С любовью 💖', 250, 470);
+            ctx.font = 'italic 16px Roboto';
+            ctx.fillText('С любовью', 250, 470);
 
-            // Загружаем на сервер
             uploadToServer();
         }
 
@@ -161,7 +158,6 @@
             const loading = document.getElementById('loading');
             const buttons = document.getElementById('buttons');
 
-            // Показываем индикатор загрузки
             loading.style.display = 'block';
             buttons.style.display = 'none';
 
@@ -180,25 +176,17 @@
                     if (data.success) {
                         currentImageUrl = data.url;
                         currentImageId = data.id;
-
-                        console.log('✅ Картинка загружена!');
-                        console.log('📁 ID:', currentImageId);
-                        console.log('🔗 URL:', currentImageUrl);
-
-                        // Показываем кнопки
                         loading.style.display = 'none';
                         buttons.style.display = 'block';
-
-                        alert('✅ Валентинка успешно сохранена в облаке!');
+                        console.log('Картинка загружена:', data.url);
                     } else {
                         loading.style.display = 'none';
-                        alert('❌ Ошибка: ' + (data.error || 'Не удалось сохранить'));
+                        console.error('Ошибка сохранения:', data.error);
                     }
                 }, 'image/png');
             } catch (error) {
                 loading.style.display = 'none';
-                console.error('Ошибка загрузки:', error);
-                alert('❌ Ошибка сети: ' + error.message);
+                console.error('Ошибка сети:', error);
             }
         }
 
@@ -211,16 +199,12 @@
         }
 
         function shareToTelegram() {
-            if (!currentImageUrl) {
-                alert('Сначала сгенерируйте валентинку');
-                return;
-            }
-
-            const messageText = "Вам отправили валентинку! 💌\nНажмите на ссылку, чтобы увидеть ❤️\n";
+            if (!currentImageUrl) return;
+            const messageText = "Вам отправили валентинку!\nНажмите на ссылку, чтобы увидеть.";
             const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(currentImageUrl)}&text=${encodeURIComponent(messageText)}`;
             window.open(telegramUrl, '_blank');
         }
-        // Генерируем при загрузке
+
         window.onload = generateValentine;
     </script>
 </body>
