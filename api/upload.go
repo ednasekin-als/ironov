@@ -71,7 +71,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	// --- авто удаление через 5 минут ---
 	go func(id string) {
-		time.Sleep(5 * time.Minute)
+		time.Sleep(1 * time.Minute)
 		_ = deleteFromUploadcare(id, secretKey)
 	}(fileID)
 
@@ -132,7 +132,7 @@ func uploadToUploadcare(imageBytes []byte, publicKey string) (string, string, er
 	fileID := uploadResp.File
 
 	// прямой URL через твой поддомен
-	fileURL := fmt.Sprintf("https://1kqur3jhqh.ucarecdn.com/%s/valentine.png", fileID)
+	fileURL := fmt.Sprintf("https://1kqur3jhqh.ucarecd.net/%s/valentine.png", fileID)
 
 	return fileURL, fileID, nil
 }
