@@ -157,6 +157,12 @@ func deleteFromUploadcare(fileID, secretKey string) error {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == 200 || resp.StatusCode == 204 {
+		fmt.Println("✅ Файл удален:", fileID)
+	} else {
+		fmt.Println("⚠️ Не удалось удалить файл:", fileID, "Status:", resp.Status)
+	}
+
 	return nil
 }
 
