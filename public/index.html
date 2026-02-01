@@ -52,6 +52,7 @@
         }
 
         button {
+            width: 100%;
             padding: 10px 20px;
             margin: 5px;
             background: #fd5300;
@@ -65,6 +66,7 @@
 
         button:hover {
             background: #fff;
+            color: #000;
         }
 
         #buttons {
@@ -103,7 +105,6 @@
     <script>
         let currentImageUrl = null;
         let currentImageId = null;
-
         function generateValentine() {
             const canvas = document.getElementById('valentineCanvas');
             const ctx = canvas.getContext('2d');
@@ -111,25 +112,32 @@
 
             ctx.clearRect(0, 0, 500, 500);
 
-            // Фон
+            // Фон градиент нежно-розовый
             const gradient = ctx.createLinearGradient(0, 0, 500, 500);
-            gradient.addColorStop(0, '#111');
-            gradient.addColorStop(1, '#222');
+            gradient.addColorStop(0, '#ffe6f0');
+            gradient.addColorStop(1, '#ffccd9');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, 500, 500);
 
-            // Сердечки (белые и оранжевые)
-            ctx.fillStyle = '#ff7a00';
-            drawHeart(ctx, 250, 200, 50);
+            // Генерация сердечек разного размера, цвета и формы
+            const hearts = [
+                { x: 250, y: 200, size: 50, color: '#ff99c8' },
+                { x: 100, y: 100, size: 20, color: '#ffb3d1' },
+                { x: 400, y: 100, size: 25, color: '#ff80aa' },
+                { x: 100, y: 400, size: 15, color: '#ffc0d8' },
+                { x: 400, y: 400, size: 30, color: '#ff99c8' },
+                { x: 250, y: 50, size: 10, color: '#ffd6e8' }, // маленькие
+                { x: 50, y: 250, size: 15, color: '#ffb3d1' },
+                { x: 450, y: 250, size: 15, color: '#ff80aa' },
+            ];
 
-            ctx.fillStyle = '#ff7a00';
-            drawHeart(ctx, 100, 100, 20);
-            drawHeart(ctx, 400, 100, 20);
-            drawHeart(ctx, 100, 400, 20);
-            drawHeart(ctx, 400, 400, 20);
+            hearts.forEach(h => {
+                ctx.fillStyle = h.color;
+                drawHeart(ctx, h.x, h.y, h.size);
+            });
 
             // Текст
-            ctx.fillStyle = '#ff7a00';
+            ctx.fillStyle = '#d6336c';
             ctx.font = 'bold 20px Roboto';
             ctx.textAlign = 'center';
             ctx.globalAlpha = 1;
