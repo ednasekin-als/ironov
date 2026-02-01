@@ -74,15 +74,13 @@
 
         <canvas id="valentineCanvas" width="500" height="500"></canvas>
 
-        <div style="display: none;" id="buttons">
+        <div id="buttons">
             <button onclick="downloadValentine()">💾 Скачать</button>
             <button onclick="shareToTelegram()">📤 Telegram</button>
         </div>
     </div>
 
     <script>
-        let currentImageId = null;
-
         function generateValentine() {
             const canvas = document.getElementById('valentineCanvas');
             const ctx = canvas.getContext('2d');
@@ -125,33 +123,11 @@
             ctx.font = 'italic 16px Arial';
             ctx.fillText('С любовью 💖', 250, 470);
 
-            // Сохраняем на сервер и получаем ID
-            canvas.toBlob(async (blob) => {
-                const formData = new FormData();
-                formData.append('image', blob, 'valentine.png');
+            // Показываем кнопки сразу
+            document.getElementById('buttons').style.display = 'block';
 
-                try {
-                    const response = await fetch('/api/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    const data = await response.json();
-                    console.log('Ответ сервера:', data);
-
-                    if (data.success) {
-                        currentImageId = data.id;
-                        document.getElementById('buttons').style.display = 'block';
-                        console.log('Картинка сохранена. ID:', currentImageId);
-                        console.log('URL картинки:', data.url);
-                    } else {
-                        alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-                    }
-                } catch (error) {
-                    console.error('Ошибка загрузки:', error);
-                    alert('Ошибка сохранения картинки: ' + error.message);
-                }
-            }, 'image/png');
+            // Убираем серверную логику - больше не отправляем на сервер
+            console.log('Валентинка сгенерирована!');
         }
 
         function drawHeart(ctx, x, y, size) {
@@ -171,18 +147,19 @@
         }
 
         function shareToTelegram() {
-            if (!currentImageId) {
-                alert('Сначала сгенерируйте валентинку');
-                return;
-            }
+            const canvas = document.getElementById('valentineCanvas');
 
-            const imageUrl = window.location.origin + '/api/images/' + currentImageId + '.png';
-            const messageText = "Вам отправили валентинку! 💌\nНажмите на картинку, чтобы увидеть ❤️";
+            // Создаем Data URL картинки
+            const imageData = canvas.toDataURL('image/png');
 
-            const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(imageUrl)}&text=${encodeURIComponent(messageText)}`;
+            // Telegram не поддерживает прямые Data URLs в ссылках
+            // Поэтому отправляем ссылку на генератор + инструкцию
+            const message = "Я создал(а) валентинку! 💌\nСоздай свою тут: " + window.location.href;
+            const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(message)}`;
             window.open(telegramUrl, '_blank');
         }
 
+        // Генерируем при загрузке
         window.onload = generateValentine;
     </script>
 </body>
