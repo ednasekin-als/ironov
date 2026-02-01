@@ -23,10 +23,7 @@ type ServerResponse struct {
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
-    // CORS headers
     w.Header().Set("Access-Control-Allow-Origin", "*")
-    w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-    w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
     
     if r.Method == "OPTIONS" {
         w.WriteHeader(http.StatusOK)
@@ -38,43 +35,37 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         return
     }
     
-    // Get Uploadcare public key from environment
     publicKey := os.Getenv("UPLOADCARE_PUBLIC_KEY")
     if publicKey == "" {
         sendJSONError(w, "Uploadcare configuration error", http.StatusInternalServerError)
         return
     }
     
-    // Parse multipart form
-    err := r.ParseMultipartForm(10 << 20) // 10MB
+    err := r.ParseMultipartForm(10 << 20)
     if err != nil {
-        sendJSONError(w, "Failed to parse form: "+err.Error(), http.StatusBadRequest)
+        sendJSONError(w, "Failed to parse form", http.StatusBadRequest)
         return
     }
     
-    // Get file
-    file, header, err := r.FormFile("image")
+    file, _, err := r.FormFile("image")
     if err != nil {
-        sendJSONError(w, "No image file: "+err.Error(), http.StatusBadRequest)
+        sendJSONError(w, "No image file", http.StatusBadRequest)
         return
     }
     defer file.Close()
     
-    // Read file
     imageData, err := io.ReadAll(file)
     if err != nil {
-        sendJSONError(w, "Failed to read image: "+err.Error(), http.StatusInternalServerError)
+        sendJSONError(w, "Failed to read image", http.StatusInternalServerError)
         return
     }
     
-    // Upload to Uploadcare
-    fileURL, fileID, err := uploadToUploadcare(imageData, publicKey, header.Filename)
+    fileURL, fileID, err := uploadToUploadcare(imageData, publicKey)
     if err != nil {
         sendJSONError(w, "Failed to upload to storage: "+err.Error(), http.StatusInternalServerError)
         return
     }
     
-    // Send success response
     response := ServerResponse{
         Success: true,
         ID:      fileID,
@@ -85,12 +76,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(response)
 }
 
-func uploadToUploadcare(imageBytes []byte, publicKey string, filename string) (string, string, error) {
+func uploadToUploadcare(imageBytes []byte, publicKey string) (string, string, error) {
     body := &bytes.Buffer{}
     writer := multipart.NewWriter(body)
     
-    // Add file with original filename
-    part, err := writer.CreateFormFile("file", filename)
+    part, err := writer.CreateFormFile("file", "valentine.png")
     if err != nil {
         return "", "", err
     }
@@ -100,13 +90,11 @@ func uploadToUploadcare(imageBytes []byte, publicKey string, filename string) (s
         return "", "", err
     }
     
-    // Add Uploadcare parameters
     writer.WriteField("UPLOADCARE_PUB_KEY", publicKey)
-    writer.WriteField("UPLOADCARE_STORE", "1") // Auto-store file
+    writer.WriteField("UPLOADCARE_STORE", "1")
     
     writer.Close()
     
-    // Send request
     req, err := http.NewRequest("POST", uploadcareAPI, body)
     if err != nil {
         return "", "", err
@@ -121,26 +109,22 @@ func uploadToUploadcare(imageBytes []byte, publicKey string, filename string) (s
     }
     defer resp.Body.Close()
     
-    // Read response
     respBody, err := io.ReadAll(resp.Body)
     if err != nil {
         return "", "", err
     }
     
-    // Parse JSON
     var uploadResp UploadcareResponse
     err = json.Unmarshal(respBody, &uploadResp)
     if err != nil {
         return "", "", err
     }
     
-    // Extract file ID from response (UUID format)
     fileID := uploadResp.File
     
-    // ВАЖНО: Прямая ссылка на файл без формата
-    // Было: https://ucarecdn.com/{file_id}/-/format/png/
-    // Стало: https://ucarecdn.com/{file_id}/
-    fileURL := fmt.Sprintf("https://ucarecdn.com/%s/", fileID)
+    // ВАЖНО: Используем ТВОЙ фиксированный поддомен!
+    // Замени 1kqur3jhqh на свой поддомен из панели Uploadcare
+    fileURL := fmt.Sprintf("https://1kqur3jhqh.ucarecd.net/%s/valentine.png", fileID)
     
     return fileURL, fileID, nil
 }
