@@ -5,13 +5,21 @@
     <meta charset="UTF-8">
     <title>Создать Валентинку</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://db.onlinewebfonts.com/c/af2bba52a607a39b7b92a72428ff47ca?family=ALS+Hauss+Medium"
-        rel="stylesheet">
     <style>
+        @font-face {
+            font-family: als_hauss_be;
+            src: url("als_hauss_be.otf")
+        }
+
+        @font-face {
+            font-family: als_hauss;
+            src: url("hauss.ttf")
+        }
+
         body {
             margin: 0;
             padding: 20px;
-            font-family: "ALS Hauss Medium";
+            font-family: als_hauss;
             background: #000;
             color: #fd4820;
             display: flex;
@@ -21,7 +29,7 @@
         }
 
         .container {
-            max-width: 600px;
+            max-width: 500px;
             width: 100%;
             background: #000000;
             padding: 20px;
@@ -32,6 +40,7 @@
         h1 {
             color: #fff;
             margin-bottom: 20px;
+            font-family: als_hauss_be;
         }
 
         textarea {
@@ -99,7 +108,7 @@
 
         <button onclick="generateValentine()">Сгенерировать</button>
 
-        <canvas id="valentineCanvas" width="300" height="300"></canvas>
+        <canvas id="valentineCanvas" width="500" height="500"></canvas>
 
         <div class="loading" id="loading">Загружаем на сервер...</div>
 
