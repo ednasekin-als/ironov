@@ -8,7 +8,6 @@ import (
     "mime/multipart"
     "net/http"
     "os"
-    // УБРАТЬ: "strings" - не используется
 )
 
 const uploadcareAPI = "https://upload.uploadcare.com/base/"
@@ -54,7 +53,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     }
     
     // Get file
-    file, _, err := r.FormFile("image")
+    file, header, err := r.FormFile("image")
     if err != nil {
         sendJSONError(w, "No image file: "+err.Error(), http.StatusBadRequest)
         return
@@ -69,7 +68,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     }
     
     // Upload to Uploadcare
-    fileURL, fileID, err := uploadToUploadcare(imageData, publicKey)
+    fileURL, fileID, err := uploadToUploadcare(imageData, publicKey, header.Filename)
     if err != nil {
         sendJSONError(w, "Failed to upload to storage: "+err.Error(), http.StatusInternalServerError)
         return
@@ -86,12 +85,12 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(response)
 }
 
-func uploadToUploadcare(imageBytes []byte, publicKey string) (string, string, error) {
+func uploadToUploadcare(imageBytes []byte, publicKey string, filename string) (string, string, error) {
     body := &bytes.Buffer{}
     writer := multipart.NewWriter(body)
     
-    // Add file
-    part, err := writer.CreateFormFile("file", "valentine.png")
+    // Add file with original filename
+    part, err := writer.CreateFormFile("file", filename)
     if err != nil {
         return "", "", err
     }
@@ -138,9 +137,10 @@ func uploadToUploadcare(imageBytes []byte, publicKey string) (string, string, er
     // Extract file ID from response (UUID format)
     fileID := uploadResp.File
     
-    // Construct CDN URL
-    // Format: https://ucarecdn.com/{file_id}/-/format/png/
-    fileURL := fmt.Sprintf("https://ucarecdn.com/%s/-/format/png/", fileID)
+    // ВАЖНО: Прямая ссылка на файл без формата
+    // Было: https://ucarecdn.com/{file_id}/-/format/png/
+    // Стало: https://ucarecdn.com/{file_id}/
+    fileURL := fmt.Sprintf("https://ucarecdn.com/%s/", fileID)
     
     return fileURL, fileID, nil
 }
