@@ -8,7 +8,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"time"
 )
 
 const uploadcareAPI = "https://upload.uploadcare.com/base/"
@@ -25,6 +24,8 @@ type ServerResponse struct {
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
@@ -41,8 +42,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		sendJSONError(w, "Uploadcare configuration error", http.StatusInternalServerError)
 		return
 	}
-
-	secretKey := "d87df35841478b723195" // твой секретный ключ
 
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
@@ -95,7 +94,7 @@ func uploadToUploadcare(imageBytes []byte, publicKey string) (string, string, er
 
 	writer.WriteField("UPLOADCARE_PUB_KEY", publicKey)
 	writer.WriteField("UPLOADCARE_STORE", "1")    // сохраняем файл
-	writer.WriteField("UPLOADCARE_EXPIRE", "300") // удаление через 300 секунд = 5 минут
+	writer.WriteField("UPLOADCARE_EXPIRE", "60") // удаление через 60 секунд = 1 минута
 
 	writer.Close()
 
