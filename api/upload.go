@@ -6,6 +6,7 @@ import (
     "fmt"
     "io"
     "net/http"
+    "strings"
     "sync"
 )
 
@@ -38,54 +39,76 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         return
     }
     
-    // Только POST для /api/upload
-    if r.URL.Path != "/api/upload" {
+    // Обработка статических картинок
+    if strings.HasPrefix(r.URL.Path, "/api/images/") && strings.HasSuffix(r.URL.Path, ".png") {
+        // Извлекаем token из URL: /api/images/{token}.png
+        token := r.URL.Path[len("/api/images/"):]
+        token = token[:len(token)-4] // убираем .png
+        
+        mu.RLock()
+        data, exists := images[token]
+        mu.RUnlock()
+        
+        if exists {
+            w.Header().Set("Content-Type", "image/png")
+            w.Header().Set("Cache-Control", "public, max-age=31536000")
+            w.Write(data)
+            return
+        }
+        
         http.NotFound(w, r)
         return
     }
     
-    if r.Method != "POST" {
-        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+    // Обработка загрузки
+    if r.URL.Path == "/api/upload" {
+        if r.Method != "POST" {
+            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+            return
+        }
+        
+        // Парсим multipart форму
+        err := r.ParseMultipartForm(10 << 20) // 10MB
+        if err != nil {
+            http.Error(w, "Failed to parse form: "+err.Error(), http.StatusBadRequest)
+            return
+        }
+        
+        // Получаем файл
+        file, _, err := r.FormFile("image")
+        if err != nil {
+            http.Error(w, "No image file: "+err.Error(), http.StatusBadRequest)
+            return
+        }
+        defer file.Close()
+        
+        // Читаем файл
+        imageData, err := io.ReadAll(file)
+        if err != nil {
+            http.Error(w, "Failed to read image: "+err.Error(), http.StatusInternalServerError)
+            return
+        }
+        
+        // Генерируем ID
+        token := generateToken()
+        
+        // Сохраняем в память
+        mu.Lock()
+        images[token] = imageData
+        mu.Unlock()
+        
+        // Отправляем JSON ответ
+        response := UploadResponse{
+            Success: true,
+            ID:      token,
+            URL:     "/api/images/" + token + ".png",
+        }
+        
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(response)
         return
     }
     
-    // Парсим multipart форму
-    err := r.ParseMultipartForm(10 << 20) // 10MB
-    if err != nil {
-        http.Error(w, "Failed to parse form: "+err.Error(), http.StatusBadRequest)
-        return
-    }
-    
-    // Получаем файл
-    file, _, err := r.FormFile("image")
-    if err != nil {
-        http.Error(w, "No image file: "+err.Error(), http.StatusBadRequest)
-        return
-    }
-    defer file.Close()
-    
-    // Читаем файл
-    imageData, err := io.ReadAll(file)
-    if err != nil {
-        http.Error(w, "Failed to read image: "+err.Error(), http.StatusInternalServerError)
-        return
-    }
-    
-    // Генерируем ID
-    token := generateToken()
-    
-    // Сохраняем в память
-    mu.Lock()
-    images[token] = imageData
-    mu.Unlock()
-    
-    // Отправляем JSON ответ
-    response := UploadResponse{
-        Success: true,
-        ID:      token,
-        URL:     "/api/images/" + token + ".png",  // исправленный путь
-    }
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
+    // Для всех остальных маршрутов - 404
+    http.NotFound(w, r)
 }
