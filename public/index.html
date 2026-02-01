@@ -131,22 +131,25 @@
                 formData.append('image', blob, 'valentine.png');
 
                 try {
-                    const response = await fetch('/upload', {
+                    const response = await fetch('/api/upload', {
                         method: 'POST',
                         body: formData
                     });
 
                     const data = await response.json();
+                    console.log('Ответ сервера:', data);
 
                     if (data.success) {
                         currentImageId = data.id;
                         document.getElementById('buttons').style.display = 'block';
                         console.log('Картинка сохранена. ID:', currentImageId);
                         console.log('URL картинки:', data.url);
+                    } else {
+                        alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
                     }
                 } catch (error) {
                     console.error('Ошибка загрузки:', error);
-                    alert('Ошибка сохранения картинки');
+                    alert('Ошибка сохранения картинки: ' + error.message);
                 }
             }, 'image/png');
         }
@@ -173,16 +176,13 @@
                 return;
             }
 
-            const viewUrl = window.location.origin + '/view/' + currentImageId;
-            const messageText = "Вам отправили валентинку! 💌";
+            const imageUrl = window.location.origin + '/api/images/' + currentImageId + '.png';
+            const messageText = "Вам отправили валентинку! 💌\nНажмите на картинку, чтобы увидеть ❤️";
 
-            const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(viewUrl)}&text=${encodeURIComponent(messageText)}`;
+            const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(imageUrl)}&text=${encodeURIComponent(messageText)}`;
             window.open(telegramUrl, '_blank');
         }
 
-
-
-        // Генерируем при загрузке
         window.onload = generateValentine;
     </script>
 </body>
