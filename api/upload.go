@@ -8,7 +8,7 @@ import (
     "mime/multipart"
     "net/http"
     "os"
-    "strings"
+    // УБРАТЬ: "strings" - не используется
 )
 
 const uploadcareAPI = "https://upload.uploadcare.com/base/"
