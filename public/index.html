@@ -19,7 +19,6 @@
         body {
             margin: 0;
             padding: 20px;
-            font-family: als_hauss;
             background: #000;
             color: #fd4820;
             display: flex;
@@ -41,13 +40,16 @@
             color: #fff;
             margin-bottom: 20px;
             font-family: als_hauss_be;
+            font-size: 30px;
         }
 
         textarea {
-            width: 100%;
+            width: 480px;
+            border: 0px solid;
             height: 100px;
             padding: 10px;
             font-size: 18px;
+            font-family: als_hauss;
             margin: 10px 0;
             border-radius: 10px;
             background: #222;
@@ -64,7 +66,8 @@
         button {
             width: 100%;
             padding: 20px;
-            font-size: 20px;
+            font-size: 22px;
+            font-family: als_hauss_be;
             margin: 5px;
             background: #fd5300;
             color: #fff;
@@ -93,7 +96,6 @@
         .loading {
             display: none;
             color: #fd4820;
-            font-style: italic;
             margin-top: 10px;
         }
     </style>
@@ -117,8 +119,44 @@
             <button class="telegram" onclick="shareToTelegram()">Поделиться через Telegram</button>
         </div>
     </div>
+    <script>
+        let lastHeartTime = 0;
+
+        document.addEventListener('mousemove', e => {
+            const now = Date.now();
+            if (now - lastHeartTime < 100) return; // ограничение частоты
+            lastHeartTime = now;
+
+            // создаём img вместо SVG path
+            const heart = document.createElement('img');
+            heart.src = 'heart.svg'; // путь к твоему файлу
+            heart.style.width = (40 + Math.random() * 60) + 'px'; // 40-100px
+            heart.style.height = 'auto';
+            heart.style.position = 'fixed';
+            heart.style.left = e.clientX + 'px';
+            heart.style.top = e.clientY + 'px';
+            heart.style.pointerEvents = 'none';
+            heart.style.opacity = 0.8;
+            heart.style.transform = `translate(-50%, -50%) rotate(${Math.random() * 360}deg)`;
+            heart.style.transition = 'transform 1.5s ease-out, opacity 1.5s ease-out';
+
+            document.body.appendChild(heart);
+
+            // анимация: поднимаем и уменьшаем
+            setTimeout(() => {
+                const scale = 0.5 + Math.random() * 0.8;
+                const yMove = -60 - Math.random() * 60;
+                const xMove = -30 + Math.random() * 60;
+                heart.style.transform = `translate(${xMove}px, ${yMove}px) scale(${scale}) rotate(${Math.random() * 360}deg)`;
+                heart.style.opacity = 0;
+            }, 10);
+
+            setTimeout(() => heart.remove(), 1600);
+        });
+    </script>
 
     <script>
+
         let currentImageUrl = null;
         let currentImageId = null;
         function generateValentine() {
